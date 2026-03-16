@@ -70,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .expiresIn(accessTokenExpirationMs/1000)
+                .expiresInSeconds(accessTokenExpirationMs / 1000)
                 .build();
     }
 
@@ -99,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .expiresIn(accessTokenExpirationMs/1000)
+                .expiresInSeconds(accessTokenExpirationMs / 1000)
                 .build();
     }
 
@@ -137,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
-                .expiresIn(accessTokenExpirationMs/1000)
+                .expiresInSeconds(accessTokenExpirationMs / 1000)
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package com.vishal.MoneyTrack.entities;
 
+import com.vishal.MoneyTrack.entities.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,8 +27,12 @@ public class User extends BaseEntity {
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false, unique = true, length = 10)
+    @Column(name = "phone_number", nullable = false, unique = true, length = 15)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_role", nullable = false, length = 20)
+    private UserRole userRole = UserRole.USER;
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = true;
