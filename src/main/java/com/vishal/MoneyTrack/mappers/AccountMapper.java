@@ -1,6 +1,7 @@
 package com.vishal.MoneyTrack.mappers;
 
 import com.vishal.MoneyTrack.dto.requests.AccountRequest;
+import com.vishal.MoneyTrack.dto.requests.AccountUpdateRequest;
 import com.vishal.MoneyTrack.dto.responses.AccountResponse;
 import com.vishal.MoneyTrack.entities.Account;
 import org.springframework.stereotype.Component;
@@ -27,9 +28,10 @@ public class AccountMapper {
         );
     }
 
-    public void updateEntity(Account entity, AccountRequest request) {
+    public void updateEntity(Account entity, AccountUpdateRequest request) {
         entity.setName(request.name());
-        entity.setBalance(request.balance());
+        // Balance is NOT updated here — it is managed automatically by income/expense
+        // operations and the dedicated PATCH /{id}/balance endpoint
         if (request.description() != null) {
             entity.setDescription(request.description());
         }

@@ -1,56 +1,64 @@
 package com.vishal.MoneyTrack.services;
 
+import com.vishal.MoneyTrack.entities.RefreshToken;
+import com.vishal.MoneyTrack.entities.User;
+import com.vishal.MoneyTrack.repo.RefreshTokenRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
 
-    private final Map<String, RefreshTokenInfo> refreshTokens = new ConcurrentHashMap<>();
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public void storeRefreshToken(String token, UUID userId, LocalDateTime expiryDate) {
-        refreshTokens.put(token, new RefreshTokenInfo(userId, expiryDate, false));
+    @Transactional
+    public void storeRefreshToken(String token, User user, LocalDateTime expiryDate) {
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(token);
+        refreshToken.setUser(user);
+        refreshToken.setExpiryDate(expiryDate);
+        refreshToken.setRevoked(false);
+        refreshTokenRepository.save(refreshToken);
     }
 
     public boolean isValidRefreshToken(String token) {
-        RefreshTokenInfo info = refreshTokens.get(token);
-        if (info == null || info.revoked) {
+        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByTokenAndRevokedFalse(token);
+        if (refreshToken.isEmpty()) {
             return false;
         }
-        if (info.expiryDate.isBefore(LocalDateTime.now())) {
-            refreshTokens.remove(token);
+        if (refreshToken.get().getExpiryDate().isBefore(LocalDateTime.now())) {
+            revokeRefreshToken(token);
             return false;
         }
         return true;
     }
 
     public UUID getUserIdFromToken(String token) {
-        RefreshTokenInfo info = refreshTokens.get(token);
-        return info != null ? info.userId : null;
+        return refreshTokenRepository.findByTokenAndRevokedFalse(token)
+                .map(rt -> rt.getUser().getId())
+                .orElse(null);
     }
 
+    @Transactional
     public void revokeRefreshToken(String token) {
-        RefreshTokenInfo info = refreshTokens.get(token);
-        if (info != null) {
-            info.revoked = true;
-            refreshTokens.remove(token);
-        }
+        refreshTokenRepository.findByToken(token).ifPresent(rt -> {
+            rt.setRevoked(true);
+            refreshTokenRepository.save(rt);
+        });
     }
 
-    private static class RefreshTokenInfo {
-        final UUID userId;
-        final LocalDateTime expiryDate;
-        boolean revoked;
+    @Transactional
+    public void revokeAllTokensForUser(UUID userId) {
+        refreshTokenRepository.revokeAllByUserId(userId);
+    }
 
-        RefreshTokenInfo(UUID userId, LocalDateTime expiryDate, boolean revoked) {
-            this.userId = userId;
-            this.expiryDate = expiryDate;
-            this.revoked = revoked;
-        }
+    public boolean tokenExists(String token) {
+        return refreshTokenRepository.findByToken(token).isPresent();
     }
 }
-

@@ -1,8 +1,9 @@
 package com.vishal.MoneyTrack.services.impl;
 
-import com.vishal.MoneyTrack.config.SecurityUtils;
 import com.vishal.MoneyTrack.dto.requests.IncomeCategoryRequest;
 import com.vishal.MoneyTrack.dto.responses.IncomeCategoryResponse;
+import com.vishal.MoneyTrack.dto.responses.PagedResponse;
+import com.vishal.MoneyTrack.dto.responses.PagedResponseMapper;
 import com.vishal.MoneyTrack.entities.IncomeCategory;
 import com.vishal.MoneyTrack.entities.User;
 import com.vishal.MoneyTrack.exceptions.DuplicateResourceException;
@@ -11,11 +12,15 @@ import com.vishal.MoneyTrack.mappers.IncomeCategoryMapper;
 import com.vishal.MoneyTrack.repo.IncomeCategoryRepository;
 import com.vishal.MoneyTrack.repo.UserRepository;
 import com.vishal.MoneyTrack.services.IncomeCategoryService;
+import com.vishal.MoneyTrack.utils.PageableUtils;
+import com.vishal.MoneyTrack.utils.SecurityUtils;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,10 +38,10 @@ public class IncomeCategoryServiceImpl implements IncomeCategoryService {
         if (repository.existsByCategoryNameAndUserId(request.categoryName(), userId)) {
             throw new DuplicateResourceException("Income category with name '" + request.categoryName() + "' already exists for this user");
         }
-        
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         IncomeCategory entity = mapper.toEntity(request);
         entity.setUser(user);
         IncomeCategory saved = repository.save(entity);
@@ -44,6 +49,7 @@ public class IncomeCategoryServiceImpl implements IncomeCategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IncomeCategoryResponse getById(UUID id) {
         UUID userId = SecurityUtils.getCurrentUserId();
         IncomeCategory entity = repository.findByIdAndUserId(id, userId)
@@ -52,11 +58,12 @@ public class IncomeCategoryServiceImpl implements IncomeCategoryService {
     }
 
     @Override
-    public List<IncomeCategoryResponse> getAll() {
+    @Transactional(readOnly = true)
+    public PagedResponse<IncomeCategoryResponse> getAll(int page, int size, String sortBy, String sortDir) {
         UUID userId = SecurityUtils.getCurrentUserId();
-        return repository.findByUserId(userId).stream()
-                .map(mapper::toResponse)
-                .toList();
+        Pageable pageable = PageableUtils.buildPageable(page, size, sortBy, sortDir);
+        Page<IncomeCategory> incomeCategoryPage = repository.findByUserId(userId, pageable);
+        return PagedResponseMapper.toPagedResponse(incomeCategoryPage, mapper::toResponse);
     }
 
     @Override
@@ -65,12 +72,12 @@ public class IncomeCategoryServiceImpl implements IncomeCategoryService {
         UUID userId = SecurityUtils.getCurrentUserId();
         IncomeCategory entity = repository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Income category not found or access denied"));
-        
-        if (!entity.getCategoryName().equals(request.categoryName()) && 
-            repository.existsByCategoryNameAndUserId(request.categoryName(), userId)) {
+
+        if (!entity.getCategoryName().equals(request.categoryName()) &&
+                repository.existsByCategoryNameAndUserId(request.categoryName(), userId)) {
             throw new DuplicateResourceException("Income category with name '" + request.categoryName() + "' already exists for this user");
         }
-        
+
         mapper.updateEntity(entity, request);
         IncomeCategory updated = repository.save(entity);
         return mapper.toResponse(updated);

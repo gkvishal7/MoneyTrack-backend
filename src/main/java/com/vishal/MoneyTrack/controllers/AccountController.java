@@ -1,22 +1,26 @@
 package com.vishal.MoneyTrack.controllers;
 
 import com.vishal.MoneyTrack.dto.requests.AccountRequest;
+import com.vishal.MoneyTrack.dto.requests.AccountUpdateRequest;
+import com.vishal.MoneyTrack.dto.requests.BalanceUpdateRequest;
 import com.vishal.MoneyTrack.dto.responses.AccountResponse;
 import com.vishal.MoneyTrack.dto.responses.ApiResponse;
+import com.vishal.MoneyTrack.dto.responses.PagedResponse;
 import com.vishal.MoneyTrack.services.AccountService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/account")
 @RequiredArgsConstructor
+@Validated
 public class AccountController {
 
     private final AccountService service;
@@ -35,15 +39,19 @@ public class AccountController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AccountResponse>>> getAll() {
-        List<AccountResponse> responses = service.getAll();
+    public ResponseEntity<ApiResponse<PagedResponse<AccountResponse>>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<AccountResponse> responses = service.getAll(page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountResponse>> update(
             @PathVariable UUID id,
-            @Valid @RequestBody AccountRequest request) {
+            @Valid @RequestBody AccountUpdateRequest request) {
         AccountResponse response = service.update(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Account updated successfully"));
     }
@@ -60,12 +68,5 @@ public class AccountController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Account deleted successfully"));
-    }
-
-    public record BalanceUpdateRequest(
-            @jakarta.validation.constraints.NotNull(message = "Balance is required")
-            @jakarta.validation.constraints.DecimalMin(value = "0.0", inclusive = true, message = "Balance must be greater than or equal to 0")
-            BigDecimal balance
-    ) {
     }
 }

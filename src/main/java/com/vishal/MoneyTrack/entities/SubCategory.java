@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "sub_category", indexes = @Index(name = "idx_category_id", columnList = "category_id"),
+@Table(name = "sub_category", indexes = @Index(name = "idx_sub_category_category_id", columnList = "category_id"),
        uniqueConstraints = @UniqueConstraint(columnNames = {"name", "category_id", "user_id"}))
 @Getter
 @Setter

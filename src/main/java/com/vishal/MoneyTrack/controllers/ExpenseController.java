@@ -3,21 +3,24 @@ package com.vishal.MoneyTrack.controllers;
 import com.vishal.MoneyTrack.dto.requests.ExpenseRequest;
 import com.vishal.MoneyTrack.dto.responses.ApiResponse;
 import com.vishal.MoneyTrack.dto.responses.ExpenseResponse;
+import com.vishal.MoneyTrack.dto.responses.PagedResponse;
 import com.vishal.MoneyTrack.services.ExpenseService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/expense")
 @RequiredArgsConstructor
+@Validated
 public class ExpenseController {
 
     private final ExpenseService service;
@@ -36,34 +39,57 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ExpenseResponse>>> getAll() {
-        List<ExpenseResponse> responses = service.getAll();
+    public ResponseEntity<ApiResponse<PagedResponse<ExpenseResponse>>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "expenseDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<ExpenseResponse> responses = service.getAll(page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/date-range")
-    public ResponseEntity<ApiResponse<List<ExpenseResponse>>> getByDateRange(
+    public ResponseEntity<ApiResponse<PagedResponse<ExpenseResponse>>> getByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<ExpenseResponse> responses = service.getByDateRange(startDate, endDate);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "expenseDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<ExpenseResponse> responses = service.getByDateRange(startDate, endDate, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/account/{accountId}")
-    public ResponseEntity<ApiResponse<List<ExpenseResponse>>> getByAccountId(@PathVariable UUID accountId) {
-        List<ExpenseResponse> responses = service.getByAccountId(accountId);
+    public ResponseEntity<ApiResponse<PagedResponse<ExpenseResponse>>> getByAccountId(
+            @PathVariable UUID accountId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "expenseDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<ExpenseResponse> responses = service.getByAccountId(accountId, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<ApiResponse<List<ExpenseResponse>>> getByCategoryId(@PathVariable UUID categoryId) {
-        List<ExpenseResponse> responses = service.getByCategoryId(categoryId);
+    public ResponseEntity<ApiResponse<PagedResponse<ExpenseResponse>>> getByCategoryId(
+            @PathVariable UUID categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "expenseDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<ExpenseResponse> responses = service.getByCategoryId(categoryId, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/sub-category/{subCategoryId}")
-    public ResponseEntity<ApiResponse<List<ExpenseResponse>>> getBySubCategoryId(@PathVariable UUID subCategoryId) {
-        List<ExpenseResponse> responses = service.getBySubCategoryId(subCategoryId);
+    public ResponseEntity<ApiResponse<PagedResponse<ExpenseResponse>>> getBySubCategoryId(
+            @PathVariable UUID subCategoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(200) int size,
+            @RequestParam(defaultValue = "expenseDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PagedResponse<ExpenseResponse> responses = service.getBySubCategoryId(subCategoryId, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
@@ -81,4 +107,3 @@ public class ExpenseController {
         return ResponseEntity.ok(ApiResponse.success(null, "Expense deleted successfully"));
     }
 }
-

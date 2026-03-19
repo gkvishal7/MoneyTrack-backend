@@ -38,9 +38,7 @@ public class ExpenseMapper {
     public void updateEntity(Expense entity, ExpenseRequest request) {
         entity.setExpenseDate(request.expenseDate());
         entity.setAmount(request.amount());
-        if (request.notes() != null) {
-            entity.setNotes(request.notes());
-        }
+        entity.setNotes(request.notes());
     }
 }
 

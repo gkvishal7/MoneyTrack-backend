@@ -37,9 +37,7 @@ public class IncomeMapper {
         entity.setIncomeDate(request.incomeDate());
         entity.setSourceOfIncome(request.sourceOfIncome());
         entity.setAmount(request.amount());
-        if (request.notes() != null) {
-            entity.setNotes(request.notes());
-        }
+        entity.setNotes(request.notes());
     }
 }
 

@@ -2,6 +2,7 @@ package com.vishal.MoneyTrack.dto.requests;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -22,7 +23,7 @@ public record RegisterRequest(
         String lastName,
 
         @NotBlank(message = "Phone number is required")
-        @Size(min = 10, max = 10, message = "Phone number must be 10 digits")
+        @Pattern(regexp = "\\d{10}", message = "Phone number must be exactly 10 digits")
         String phoneNumber
 ) {
 }

@@ -12,11 +12,11 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "expense", indexes = {
         @Index(name = "idx_expense_date", columnList = "expense_date"),
-        @Index(name = "idx_type_of_expense_id", columnList = "type_of_expense_id"),
+        @Index(name = "idx_expense_type_id", columnList = "expense_type_id"),
         @Index(name = "idx_category_id", columnList = "category_id"),
         @Index(name = "idx_sub_category_id", columnList = "sub_category_id"),
         @Index(name = "idx_account_id", columnList = "account_id"),
-        @Index(name = "idx_expense_user_id", columnList = "user_id")
+        @Index(name = "idx_user_id", columnList = "user_id")
 })
 @Getter
 @Setter
@@ -28,7 +28,7 @@ public class Expense extends BaseEntity {
     private LocalDate expenseDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_of_expense_id", nullable = false)
+    @JoinColumn(name = "expense_type_id", nullable = false)
     private ExpenseType expenseType;
 
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)

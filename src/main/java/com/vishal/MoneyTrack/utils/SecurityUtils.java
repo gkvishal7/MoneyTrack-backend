@@ -1,4 +1,4 @@
-package com.vishal.MoneyTrack.config;
+package com.vishal.MoneyTrack.utils;
 
 import com.vishal.MoneyTrack.exceptions.AuthenticationException;
 import org.springframework.security.core.Authentication;

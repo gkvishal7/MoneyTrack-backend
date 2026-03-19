@@ -1,6 +1,5 @@
 package com.vishal.MoneyTrack.services.impl;
 
-// import com.vishal.MoneyTrack.dto.requests.DeleteAccountRequest;
 import com.vishal.MoneyTrack.dto.requests.LoginRequest;
 import com.vishal.MoneyTrack.dto.requests.RefreshTokenRequest;
 import com.vishal.MoneyTrack.dto.requests.RegisterRequest;
@@ -38,6 +37,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.access-token-expiration-ms}")
     private long accessTokenExpirationMs;
 
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -58,23 +60,11 @@ public class AuthServiceImpl implements AuthService {
 
         User savedUser = userRepository.save(user);
 
-        String accessToken = jwtService.generateAccessToken(savedUser);
-        String refreshToken = jwtService.generateRefreshToken(savedUser);
-
-        LocalDateTime refreshTokenExpiry = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(System.currentTimeMillis() + 604800000L),
-                ZoneId.systemDefault()
-        );
-        refreshTokenService.storeRefreshToken(refreshToken, savedUser.getId(), refreshTokenExpiry);
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresInSeconds(accessTokenExpirationMs / 1000)
-                .build();
+        return generateAndStoreTokens(savedUser);
     }
 
     @Override
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmailId(request.emailId())
                 .orElseThrow(() -> new AuthenticationException("Invalid email or password"));
@@ -87,23 +77,11 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthenticationException("Invalid email or password");
         }
 
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        LocalDateTime refreshTokenExpiry = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(System.currentTimeMillis() + 604800000L),
-                ZoneId.systemDefault()
-        );
-        refreshTokenService.storeRefreshToken(refreshToken, user.getId(), refreshTokenExpiry);
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresInSeconds(accessTokenExpirationMs / 1000)
-                .build();
+        return generateAndStoreTokens(user);
     }
 
     @Override
+    @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.refreshToken();
 
@@ -115,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidTokenException("Refresh token has been revoked or expired");
         }
 
-        UUID userId = refreshTokenService.getUserIdFromToken(refreshToken);
+        UUID userId = UUID.fromString(jwtService.extractUserId(refreshToken));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -123,26 +101,18 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthenticationException("Account is disabled");
         }
 
-        String newAccessToken = jwtService.generateAccessToken(user);
-        String newRefreshToken = jwtService.generateRefreshToken(user);
-
+        // Revoke the old refresh token (rotation)
         refreshTokenService.revokeRefreshToken(refreshToken);
 
-        LocalDateTime refreshTokenExpiry = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(System.currentTimeMillis() + 604800000L),
-                ZoneId.systemDefault()
-        );
-        refreshTokenService.storeRefreshToken(newRefreshToken, user.getId(), refreshTokenExpiry);
-        
-        return AuthResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .expiresInSeconds(accessTokenExpirationMs / 1000)
-                .build();
+        return generateAndStoreTokens(user);
     }
 
     @Override
+    @Transactional
     public void logout(String refreshToken) {
+        if (!refreshTokenService.tokenExists(refreshToken)) {
+            throw new InvalidTokenException("Refresh token not found");
+        }
         refreshTokenService.revokeRefreshToken(refreshToken);
     }
 
@@ -158,5 +128,21 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.delete(user);
     }
-}
 
+    private AuthResponse generateAndStoreTokens(User user) {
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        LocalDateTime refreshTokenExpiry = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(System.currentTimeMillis() + refreshTokenExpirationMs),
+                ZoneId.systemDefault()
+        );
+        refreshTokenService.storeRefreshToken(refreshToken, user, refreshTokenExpiry);
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .expiresInSeconds(accessTokenExpirationMs / 1000)
+                .build();
+    }
+}

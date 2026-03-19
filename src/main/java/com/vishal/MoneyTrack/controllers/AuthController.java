@@ -7,11 +7,12 @@ import com.vishal.MoneyTrack.dto.requests.RegisterRequest;
 import com.vishal.MoneyTrack.dto.responses.ApiResponse;
 import com.vishal.MoneyTrack.dto.responses.AuthResponse;
 import com.vishal.MoneyTrack.services.AuthService;
+import com.vishal.MoneyTrack.utils.SecurityUtils;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -48,13 +49,10 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null, "Logout successful"));
     }
 
-    @DeleteMapping("/account")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(
-            @Valid @RequestBody DeleteAccountRequest request,
-            Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+        UUID userId = SecurityUtils.getCurrentUserId();
         authService.deleteAccount(userId, request.password());
         return ResponseEntity.ok(ApiResponse.success(null, "Account deleted successfully"));
     }
 }
-
